@@ -1,22 +1,90 @@
-import React ,{useState} from 'react'
+import React ,{useEffect, useReducer, useRef, useState} from 'react'
 import Button from './Button'
 import Loader from './Loader'
 import {useForm} from "react-hook-form"
+import {useNavigate} from "react-router-dom"
+import toast from 'react-hot-toast'
+import { useSelector,useDispatch } from 'react-redux'
+import { initUser } from '../features/user/userSlice'
 
 
 const Singup = () => {
 
     const [isLoading, setisLoading] = useState(false);
+    const [otp, setOtp] = useState(false);
+    const [otpValue,setOtpValue] = useState("");
+    const [otpTimeLeft,setOtpTimeLeft] = useState(5 * 60);
+
+
+    const timerRef = useRef(null);  // Persist across renders
+
+    useEffect(() => {
+       // Cleanup on unmount
+    }, [otp]);
+    
+  
+    const URL = import.meta.env.VITE_API_URL;
+ 
+    console.log(URL)
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const {
         register,
         handleSubmit,
-        formState:{errors},
+        formState:{errors,isSubmitting},
 
     } = useForm();
 
-    const submit = (data)=>{
-            console.log(data);
+
+
+   
+  
+   
+   
+    const submit = async(data)=>{
+        setisLoading(true);
+        
+      try{
+        const response = await fetch(`${URL}/user/signup`,{
+            method:"post",
+            credentials:"include",
+            headers:{
+                "content-type":"application/json"
+            },
+            body:JSON.stringify(data)
+        }) 
+
+        const result = await response.json();
+        console.log(result);
+        if(result.success){
+            toast.success(result.message);
+            setisLoading(false)
+            setOtp(true);
+            timerRef.current = setInterval(() => {
+                setOtpTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        setOtp(false);
+                        clearInterval(timerRef.current);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        
+          
+           
+        
+        }else{
+            toast.error(result.message);
+            setisLoading(false)
+        }
+      }catch(e){
+        console.log(e);
+        setisLoading(false)
+        toast.error(e.message || "user registraion fail please try again")
+      }
+           
     }
 
     const handleChangeType = ()=>{
@@ -26,17 +94,51 @@ const Singup = () => {
            password.type = "password"
         },[500])
     }
+
+
+ 
+
+    const verifyOtp = async ()=>{
+        if(otpValue.trim() == "" && otpValue.length !== 6){
+            alert("opt length is 6 ")
+            return
+        }
+
+     
+
+try {
+    const response = await fetch(`${URL}/user/verify`,{
+        method:"post",
+        credentials:"include",
+        headers:{
+            "content-type":"application/json"
+        },
+        body:JSON.stringify({code:otpValue})
+       })
+
+       const result = await response.json();
+       console.log(result);
+       if(result.success){
+        toast.success(result.message);
+        dispatch(initUser(result.data));
+        navigate("/");
+        setisLoading(false);
+       }
+} catch (error) {
+    
+}
+    }
    
     return (
         <div className='h-[105vh] w-full bg-gray-300 flex  justify-center items-center flex-wrap py-2'>
-            <div className=' font-bold  justify-center items-center left  p-5    w-[300px] bg-[#0e172b] hidden lg:flex flex-col justify-center items-center rounded-l
+            <div className=' font-bold   left  p-5    w-[300px] bg-[#0e172b] hidden lg:flex flex-col justify-center items-center rounded-l
            gap-1.5 h-[98%] '>
                 <h1 className='text-3xl text-white'>WelCome</h1>
                 <p className="pl-5 indent-[20px] font-light opacity-70  text-white">
                     To make connection with us please signup with person info
                 </p>
 
-                <Button content="signIn" className={"bg-white text-black"}
+                <Button func={()=>navigate("/logIn")} content="Login" className={"bg-white text-black px-8 py-2"}
 
                 />
 
@@ -118,20 +220,20 @@ const Singup = () => {
                             <input
                                 type="radio"
                                 id="buyer"
-                                name='userType'
-                                value="Buyer"
+                                name='userRole'
+                                value="buyer"
                                 placeholder="Enten full name"
                                 className="w-full accent-[#0e172b]  pr-4 py-2 outline-0 bg-gray-100 font-bold "
-                                {...register("userType",{
+                                {...register("userRole",{
                                     required:{value:true,message:"select a user type"}
 
                                 })}
                             />
                             <label htmlFor="creater" className='font-bold ml-3'>Creater?</label>
                             <input type="radio" id="creater" 
-                            value="Creater"
-                            name='userType'
-                              className=" w-full pr-4 accent-[#0e172b] py-4 outline-0 bg-gray-100 font-bold "   {...register("userType",{
+                            value="creater"
+                            name='userRole'
+                              className=" w-full pr-4 accent-[#0e172b] py-4 outline-0 bg-gray-100 font-bold "   {...register("userRole",{
                                 required:{value:true,message:"select a user type"}
 
                             })}/>
@@ -141,20 +243,42 @@ const Singup = () => {
                          
 
                      
-                        {errors.userType && <p >{errors.userType.message}</p>}
+                        {errors.userRole && <p >{errors.userRole.message}</p>}
                         </div>
 
-                        <div>
-                            <Button content="signup" className={"text-white bg-[#0e172b]"} />
-                        </div>
+                       { otp && <div className="relative w-full max-w-sm">
+                            <input
+                                type="text"
+                                placeholder="Enter otp"
+                                className="w-full  pr-4 py-2 outline-0 bg-gray-100 font-bold text-green-800 pl-12"
+                                value={otpValue}
+                                onChange={(e)=>setOtpValue(e.target.value)}
+                             
+                            />
+
+                     {otpTimeLeft > 0 &&  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-800 ml-2  h-full justify-center items-center flex text-sm p-1.5 ">
+                                <p className='text-red-700'>{Math.floor(otpTimeLeft/60)}:{Math.floor(otpTimeLeft%60)}</p>
+                            </div> }
+                             
+                          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-800">
+                              <Button content="Verify" className="bg-green-700 px-4 py-2 font-bold text-white" loader={isLoading} disabled={isLoading} type="button" func={verifyOtp}/>
+                            </div>
+                        </div>}
+
+                        {!otp && <div>
+                            <Button content="Send Otp" className={"text-white bg-[#0e172b] px-8 py-2"} disabled={isSubmitting} loader={isLoading}/>
+                        </div>}
 
                     </form>
+                    <div className="navigate block md:hidden">
+                        <p  onClick = {()=>navigate("/login")}className='text-blue-400 cursor-pointer'>already have an account?login</p>
+                    </div>
                 </div>
 
 
             </div>
 
-            {/* <Loader/> */}
+          
         </div>
 
     )

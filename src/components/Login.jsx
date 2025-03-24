@@ -2,20 +2,62 @@ import React ,{useState} from 'react'
 import Button from './Button'
 import Loader from './Loader'
 import {useForm} from "react-hook-form"
+import toast from "react-hot-toast"
+import {useNavigate} from "react-router-dom"
+import {useSelector,useDispatch} from "react-redux"
+import { initUser } from '../features/user/userSlice'
 
 
 const Login = () => {
       const [isLoading, setisLoading] = useState(false);
-    
+      const URL = import.meta.env.VITE_API_URL;
+      const navigate = useNavigate();
+      const dispatch = useDispatch();
         const {
             register,
             handleSubmit,
-            formState:{errors},
+            formState:{errors,isSubmitting},
     
         } = useForm();
     
-        const submit = (data)=>{
-                console.log(data);
+
+        const wait = ()=>{
+            return new Promise((res,rej)=>{
+                setTimeout(()=>{
+                  res("jai sre")
+                },5000)
+            })
+        }
+        const submit = async(data)=>{
+            setisLoading(true);
+            await wait();
+               try {
+                   const response = await fetch(`${URL}/user/login`,{
+                    method:"post",
+                    credentials:"include",
+                    headers:{
+                        "content-type":"application/json"
+                    },
+                    body:JSON.stringify(data)
+                   })
+
+                   const result = await response.json();
+                   console.log(result)
+                   if(result.success){
+                    toast.success(result.message)
+                    dispatch(initUser(result.data));
+                    setisLoading(false)
+                    navigate("/")
+                    
+                   }else{
+                    toast.error(result.message);
+                    setisLoading(false)
+
+                   }
+               } catch (error) {
+                toast.error(error.message || "sometin went wrong")
+                setisLoading(false)
+               }
         }
     
         const handleChangeType = ()=>{
@@ -25,16 +67,19 @@ const Login = () => {
                password.type = "password"
             },[500])
         }
+
+        const user = useSelector((state)=>state.user);
+        console.log(user);
   return (
     <div className='h-[105vh] w-full bg-gray-300 flex  justify-center items-center flex-wrap py-2'>
-    <div className=' font-bold  justify-center items-center left  p-5    w-[300px] text-[#0e172b]  bg-white hidden lg:flex flex-col justify-center items-center rounded-l
+    <div className=' font-bold  justify-center items-center left  p-5    w-[300px] text-[#0e172b]  bg-white hidden lg:flex flex-col  rounded-l
    gap-1.5 h-[98%] '>
         <h1 className='text-3xl'>WelCome Back</h1>
         <p className="pl-5 indent-[20px] font-light opacity-70 ">
             To Keep connection with us please Login with person info
         </p>
 
-        <Button content="Signup" className={" text-white bg-[#0e172b] font-bold"}
+        <Button  func = {()=>navigate("/Signup")}content="Signup" className={" text-white px-8 py-2 bg-[#0e172b] font-bold"}
 
         />
 
@@ -42,7 +87,7 @@ const Login = () => {
     <div className='right h-[98%] w-[500px] bg-[#0e172b] tex-white rounded-r  flex flex-col justify-start items-center overflow-y-auto scrollbar-hidden py-2'>
         <h1 className='font-bold text-3xl mt-3 text-white'>Login</h1>
         <div className="social-icon flex gap-2 mt-2">
-            <a className=' border border border-white bg-white rounded-full  h-[35px] w-[35px] flex justify-center items-center hover:bg-gray-800 hover:text-white transition-all duration-500'  ><i className="fa-brands fa-google-plus-g"></i></a>
+            <a className='  border border-white bg-white rounded-full  h-[35px] w-[35px] flex justify-center items-center hover:bg-gray-800 hover:text-white transition-all duration-500'  ><i className="fa-brands fa-google-plus-g"></i></a>
             <a className=' rounded-full border h-[35px] w-[35px] flex justify-center   items-center bg-white  hover:bg-gray-800 hover:text-white transition-all duration-500' href=""><i className="fa-brands fa-facebook-f"></i></a>
             <a className=' rounded-full border h-[35px] w-[35px] flex justify-center items-center bg-white  hover:bg-gray-800 hover:text-white transition-all duration-500' href=""><i className="fa-brands fa-linkedin-in"></i></a>
         </div>
@@ -89,9 +134,13 @@ const Login = () => {
                 </div>
                 {errors.password && <p className='relative w-full  max-w-sm  px-2 text-red-700'>{errors.password.message}</p>}
 
-                <div>
-                    <Button content="signup" className={"text-[#0e173b] font-bold bg-white"} />
+                <div className='flex justify-center items-center gap-2'>
+                <div className="navigate block md:hidden">
+                    <p  onClick = {()=>navigate("/Signup")}className='text-blue-400 cursor-pointer'>new user?Singup</p>
                 </div>
+                    <Button content="signIn" className={"text-[#0e173b] font-bold bg-white px-8 py-2"} disabled={isSubmitting} loader={isLoading} />
+                </div>
+               
 
             </form>
         </div>

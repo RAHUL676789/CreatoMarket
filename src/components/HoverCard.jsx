@@ -61,7 +61,7 @@ export default function HoverCard({image,video,textContent}) {
            { video && "Total-video-content" } 
            { textContent && "Total-textual-content"  } 
             </h1>
-            <Button content="know more" className="bg-white font-bold !px-6" icon={true}/>
+            <Button content="know more" className="bg-white font-bold px-8 py-2" icon={true}/>
          </div>
       </div>
 

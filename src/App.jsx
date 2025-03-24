@@ -7,12 +7,13 @@ import Singup from './components/Singup'
 import {BrowserRouter,Routes,Route} from "react-router-dom"
 import Login from './components/Login'
 import CreterHome from './Pages/CreterHome'
+import toast, { Toaster } from 'react-hot-toast';
 
 const App = () => {
   return (
   
     <BrowserRouter>
-   
+   <Toaster/>
     <Routes>
 
     <Route  path="/Signup" element={<Singup/>}></Route>
