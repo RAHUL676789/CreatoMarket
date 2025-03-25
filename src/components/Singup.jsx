@@ -123,6 +123,8 @@ try {
         dispatch(initUser(result.data));
         navigate("/");
         setisLoading(false);
+       }else{
+        toast.error(result.message);
        }
 } catch (error) {
     
