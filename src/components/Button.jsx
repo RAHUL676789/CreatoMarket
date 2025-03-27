@@ -6,6 +6,8 @@ const Button = ({className,content,icon,disabled,loader,func,type}) => {
   // console.log(func);
   const handleClick = ()=>{
     if(func){
+      console.log(func)
+      console.log("chalu")
       func();
     }
     return;

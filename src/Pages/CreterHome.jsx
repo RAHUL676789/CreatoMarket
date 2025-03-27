@@ -6,10 +6,11 @@ import { useDispatch, useSelector } from "react-redux"
 import toast from "react-hot-toast"
 import { useNavigate } from "react-router-dom"
 import { getUserDetail } from '../helper/getUserDetail';
-import { initUser } from "../features/user/userSlice"
+import { initUser, updateContent } from "../features/user/userSlice"
 import Avatar from '../components/Avatar';
 import uploadFile from '../helper/uploadFile';
 import { useForm } from "react-hook-form"
+import Loader from '../components/Loader';
 
 
 
@@ -28,45 +29,70 @@ const CreterHome = () => {
   const [upload, setUpload] = useState(false);
   const [loader, setLoader] = useState(false);
   let [upformData, setUpFormData] = useState({})
-  const [contentUrl,setContentUrl] = useState("https://res.cloudinary.com/dztbjhhir/image/upload/v1742891145/chat-app-file/dvmr9d22dxbx2dzywzlh.jpg");
+  const [imageContent, setimageContent] = useState([]);
+  const [videoContent, setvideoContent] = useState([]);
+  const [rawContent, setrawContent] = useState([]);
+  const [create,setCreate] = useState(false);
+
+  const [contentUrl, setContentUrl] = useState("");
 
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors, isSubmitting }
   } = useForm();
 
-  console.log(errors)
+  // console.log(errors)
 
-  const handleContentUrl = async(e)=>{
+  const handleContentUrl = async (e) => {
+    setLoader(true);
     try {
       const contentUrl = await uploadFile(e.target.files[0]);
-      if(contentUrl){
+      if (contentUrl) {
         setContentUrl(contentUrl);
+        setLoader(false);
       }
     } catch (error) {
-       console.log(error)
-       toast.error(error.message || "someting went wrong")
+      console.log(error)
+      setLoader(false);
+      toast.error(error.message || "someting went wrong")
     }
   }
-  const handleCreate = async(data)=>{
-         try {
-             const response = await fetch(`${URL}/content/create`,{
-              method:"post",
-              credentials:"include",
-              headers:{
-                "content-type":"application/json"
-              },
-              body:JSON.stringify({...data,url:contentUrl})
-             })
 
-             const result = await response.json();
-             console.log(result);
-        
-         } catch (error) {
-          console.log(error);
-          toast.error(error.message || "someting went wrong")
-         }
+  // const wait = async()=>{
+  //   return new Promise((res,rej)=>{
+  //     setTimeout(()=>{
+  //         res("succue");
+  //     },5000)
+  //   })
+  // }
+
+
+  const handleCreate = async (data) => {
+
+
+    try {
+      const response = await fetch(`${URL}/content/create`, {
+        method: "post",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({ ...data, url: contentUrl })
+      })
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(result.message);
+        dispatch(updateContent(result.data));
+      } else {
+        toast.error(result.message);
+      }
+
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message || "someting went wrong")
+    }
   }
 
   // accessign the token for user detaul
@@ -79,9 +105,18 @@ const CreterHome = () => {
 
     try {
       let userdata = await getUserDetail();
-
+      console.log(userdata)
       if (userdata) {
         dispatch(initUser(userdata))
+        setimageContent((prev)=>{
+          return userdata?.contents?.filter((item)=>item.type == "image")
+        });
+        setvideoContent((prev)=>{
+          return userdata?.contents?.filter((item)=>item.type == "video")
+        });
+        setrawContent((prev)=>{
+          return userdata?.contetns?.filter((item)=>item.type == "raw-content")
+        });
       } else {
         // navigate("/login")
       }
@@ -94,6 +129,10 @@ const CreterHome = () => {
   }
 
 
+  console.log(imageContent)
+  console.log(videoContent)
+  console.log(rawContent)
+
   useEffect(() => {
     if (token && user.id == "") {
 
@@ -104,28 +143,36 @@ const CreterHome = () => {
       toast.error("youre not login please login")
       // navigate("/login")
     }
-  }, [user.id]);
+  }, [user]);
 
 
 
   // function for user update therir profile
   const handlUpdateProfileChange = async (e) => {
     try {
-
+      setUpPic(true);
       let result = await uploadFile(e.target.files[0]);
       console.log(result);
       if (result) {
-        setUpPic(true);
+        setUpPic(false);
+        // setUpload(true);
         setUpFormData((prev) => {
           return {
             ...prev,
             profilePic: result
           }
         })
+        const upResult = await updateUser()
+        if(upResult.success){
+          toast.success("profile picture updated")
+        }else{
+          toast.error("unable to update profile please try again");
+        }
       }
     }
     catch (error) {
       console.log(error);
+      setUpPic(false);
       toast.error(error.message || "failed to upload profile picture")
     }
 
@@ -133,17 +180,9 @@ const CreterHome = () => {
   }
 
 
-
-
   // function for user if update their others informations
   const updateUser = async (e) => {
-    // console.log("hello updateuser");
-    e.preventDefault();
-
-    if (upformData.profilePic) {
-      setUpload(true);
-    }
-
+ 
     if (Object.keys(upformData).length === 0) {
       alert("at least one filed is required");
       return;
@@ -163,14 +202,15 @@ const CreterHome = () => {
       console.log(result);
       if (result.success) {
         setUpPic(false);
-        setUpload(false);
         dispatch(initUser(result.data));
         setLoader(false);
         setUpFormData({});
         setFilter(false);
+        return result;
       } else {
         toast.error(result.message);
         setLoader(false);
+        return result;
 
       }
     } catch (e) {
@@ -214,7 +254,11 @@ const CreterHome = () => {
             <label htmlFor="profile">
               <input type="file" id='profile' className='hidden'
                 onChange={handlUpdateProfileChange} />
-              {upPic == false ? <i class="fa-solid fa-pen-fancy cursor-pointer" title='edit'></i> : <Button func={updateUser} content="Updating" loader={upload} className="bg-[#0e172b]" />}
+              {/* {upPic == false ? <i class="fa-solid fa-pen-fancy cursor-pointer" title='edit'></i> : <Button func={updateUser} content="Updating" loader={upload} className="bg-[#0e172b]" />} */}
+
+              {upPic == true ? <Loader className="bg-[#0e172b]"/> : <div>
+                     <i className='fa-solid fa-pen-fancy '></i>
+                </div>}
             </label>
 
 
@@ -294,14 +338,16 @@ const CreterHome = () => {
 
         {/* here listing all the content of the user what kind of content created by user or suugest to creatte */}
         <div className="contents">
+          <div className='image'>
+            <HoverCard image={true} cardData={imageContent} />
+          </div>
 
-          <HoverCard image={true} />
 
           <div className="videos">
-            <HoverCard video={true} />
+            <HoverCard video={true} cardData={videoContent} />
           </div>
           <div className="content">
-            <HoverCard image={true} />
+            <HoverCard textContent={true}  cardData={rawContent}/>
           </div>
 
         </div>
@@ -370,7 +416,7 @@ const CreterHome = () => {
 
       {/* here i am going to create a model where user can create new content that more infor */}
 
-      <div className="create w-full h-full bg-gray-600 absolute flex justify-center items-center">
+      {create &&  <div className="create w-full h-full bg-gray-600 absolute flex justify-center items-center">
         <div className="create-content overflow-hidden w-full justify-center items-center flex flex-col bg-gray-300 h-[90%]">
 
           <div className="main flex flex-grow justify-center items-center overflow-hidden">
@@ -379,13 +425,13 @@ const CreterHome = () => {
               <div className="header  h-12 flex justify-center items-center">
                 <h1 className='text-3xl mb-2 text-[30e172b] font-bold'>Create - Content</h1>
               </div>
-              <div className="details pl-4 ">
-                <form onSubmit={handleSubmit(handleCreate)} className='flex flex-col   items-center justify-center gap-2 '>
+            <div className="details pl-4 ">
+                <form onSubmit={handleSubmit(handleCreate)} className='flex flex-col   items-center justify-center gap-2 relative'>
                   <div className="field flex flex-col justify-center w-full md:w-[95%]  ">
 
                     <select
                       {...register("type", {
-                        required: {value:true, message:"content-type is required field"}
+                        required: { value: true, message: "content-type is required field" }
                       })}
                       id="mySelect " className='p-2 border  bg-gray-100  outline-0'>
                       <option className='p-2' value="">Choose Content type</option>
@@ -393,7 +439,7 @@ const CreterHome = () => {
                       <option className='p-2' value="video">Video</option>
                       <option className='p-2' value="raw-content">Raw-content</option>
                     </select>
-                   
+
 
                   </div>
                   {errors.type && <p className=' w-full text-red-600'>*{errors.type.message}</p>}
@@ -401,13 +447,13 @@ const CreterHome = () => {
                     <label className='border absolute w-[20%] left-0 px-3  bg-[#dee2e6] h-full !inline-flex items-center text-black font-bold '>Title</label>
                     <input type="text"
                       {...register("title", {
-                        required: {value:true, message:"title is required field"}
+                        required: { value: true, message: "title is required field" }
                       })}
                       name='title'
                       placeholder='Enter Title '
                       className="outline-none border w-full pl-24 pr-5 py-2 bg-gray-100" />
 
-            
+
 
                   </div>
                   {errors.title && <p className='w-full text-red-600'>*{errors.title.message}</p>}
@@ -417,16 +463,16 @@ const CreterHome = () => {
 
                     <input type="number"
                       {...register("price", {
-                        min: {value:0, message:"price should be at least 1"}
+                        min: { value: 0, message: "price should be at least 1" }
                       })}
                       placeholder='Enter Title '
                       className="outline-none border w-full pl-24 pr-5 py-2 bg-gray-100" />
-                      <div>
-                        
-                     
-                      </div>
-                     
-                  
+                    <div>
+
+
+                    </div>
+
+
 
                   </div>
                   {errors.price && <p className='w-full text-red-600'> *{errors.price.message}</p>}
@@ -439,15 +485,15 @@ const CreterHome = () => {
                     {/* File Input */}
                     <input
                       {...register("url", {
-                        required: {value:true, message:"file is required field"}
+                        // required: {value:true, message:"file is required field"}
                       })}
-                      onChange={handlUpdateProfileChange}
+                      onChange={handleContentUrl}
                       type="file"
                       id="file"
                       name="file"
                       className="outline-none border w-full pl-24 pr-5 py-2 bg-gray-100"
                     />
-               
+
                   </div>
                   {errors.url && <p className='w-full text-red-600'>*{errors.url.message}</p>}
                   <div className=" relative w-[100%] md:w-[95%] flex items-center justify-center">
@@ -461,8 +507,11 @@ const CreterHome = () => {
                   </div>
 
                   <div className="buttons w-full">
-                    <Button content="Create" type="submit" className="bg-black text-white w-full py-2" />
+                    <Button content="Create" type="submit" className="bg-black text-white w-full py-2" disabled={isSubmitting} loader={isSubmitting} />
                   </div>
+                  {loader && <div className='absolute h-full w-full bg-gray-50 opacity-50'>
+                    <Loader className="bg-[#0e172b] z-40 " />
+                  </div>}
                 </form>
 
 
@@ -484,7 +533,7 @@ const CreterHome = () => {
 
           </div>
         </div>
-      </div>
+      </div>}
 
     </div>
   )
