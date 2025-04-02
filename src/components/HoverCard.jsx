@@ -5,7 +5,7 @@ import img2 from "../assest/image1.jpg";
 import img3 from "../assest/image2.jpg"
 import { useEffect, useState } from "react";
 import {useNavigate} from "react-router-dom"
-export default function HoverCard({ image, cardData, video, textContent, }) {
+export default function HoverCard({ image, cardData, video, textContent,type }) {
    console.log(cardData&& cardData);
   const images = [img1, img2, img3]
   const [currIdx, setCurrIdx] = useState(0)
@@ -82,7 +82,7 @@ export default function HoverCard({ image, cardData, video, textContent, }) {
             {textContent && "Total-textual-content"}
           </h1>
           <Button func={()=>navigate("/contents",{
-            state:cardData?cardData:[]
+            state:type?type:""
           })} type="button" content="know more" className="bg-white font-bold px-8 py-2" icon={true} />
         </div>
       </div>

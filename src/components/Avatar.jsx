@@ -2,10 +2,9 @@
 import React from 'react'
 
 const Avatar =React.memo(({username,profilePic}) => {
-  console.log("hello")
-  console.log(profilePic)
-  let result = username.split(" ");
-if(result.length >  1){
+  
+  let result = username?.split(" ");
+if(result?.length >  1){
   result = result[0][0] + result[result.length - 1][0];
 
 }else{

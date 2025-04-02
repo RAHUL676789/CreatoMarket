@@ -18,11 +18,12 @@ const CreterHome = () => {
 
   // create all neccessary state variable that may caouse to mount the page
   const URL = import.meta.env.VITE_API_URL;
-  const [isHovered, setIsHovered] = React.useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [filter, setFilter] = useState(false);
   const [content, setContent] = useState(false);
   const [nav, setnav] = useState(false)
   const user = useSelector((state) => state.user)
+  console.log(user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [upPic, setUpPic] = useState(false);
@@ -34,7 +35,7 @@ const CreterHome = () => {
   const [rawContent, setrawContent] = useState([]);
   const [create,setCreate] = useState(false);
 
-  const [contentUrl, setContentUrl] = useState("");
+  const [contentUrl, setContentUrl] = useState(null);
 
   const {
     register,
@@ -78,7 +79,7 @@ const CreterHome = () => {
         headers: {
           "content-type": "application/json"
         },
-        body: JSON.stringify({ ...data, url: contentUrl })
+        body: JSON.stringify({ ...data, url: contentUrl?.url,publicId:contentUrl?.pId })
       })
 
       const result = await response.json();
@@ -137,13 +138,22 @@ const CreterHome = () => {
     if (token && user.id == "") {
 
       hello();
-    }
+    }else{
+      setimageContent((prev)=>{
+        return user?.contents?.filter((item)=>item.type == "image")
+      });
+      setvideoContent((prev)=>{
+        return user?.contents?.filter((item)=>item.type == "video")
+      });
+      setrawContent((prev)=>{
+        return user?.contents?.filter((item)=>item.type == "raw-content");
+    })
 
     if (!token && user.id == "") {
       toast.error("youre not login please login")
       // navigate("/login")
     }
-  }, [user]);
+ } }, [user]);
 
 
 
@@ -327,7 +337,7 @@ const CreterHome = () => {
 
           </div>
 
-          <div className="new  border px-8 py-2 sm:flex justify-center items-center hover:bg-gray-200 cursor-pointer">
+          <div onClick={()=>setCreate(true)} className="new  border px-8 py-2 sm:flex justify-center items-center hover:bg-gray-200 cursor-pointer">
             <span className='mr-2'>Create-new</span>
             <i className="fa-solid fa-plus"></i>
           </div>
@@ -339,15 +349,15 @@ const CreterHome = () => {
         {/* here listing all the content of the user what kind of content created by user or suugest to creatte */}
         <div className="contents">
           <div className='image'>
-            <HoverCard image={true} cardData={imageContent} />
+            <HoverCard type="image" image={true} cardData={imageContent} />
           </div>
 
 
           <div className="videos">
-            <HoverCard video={true} cardData={videoContent} />
+            <HoverCard type="video" video={true} cardData={videoContent} />
           </div>
           <div className="content">
-            <HoverCard textContent={true}  cardData={rawContent}/>
+            <HoverCard type="rawContent" textContent={true}  cardData={rawContent}/>
           </div>
 
         </div>
@@ -416,7 +426,10 @@ const CreterHome = () => {
 
       {/* here i am going to create a model where user can create new content that more infor */}
 
-      {create &&  <div className="create w-full h-full bg-gray-600 absolute flex justify-center items-center">
+      {create &&  <div className="create w-full h-full bg-gray-600 absolute flex justify-center z-50 items-center">
+        <div className="cross">
+          <i onClick={() => setCreate(false)} className="fa-solid fa-xmark hover:scale-150 text-red-800  absolute right-3 top-6 cursor-pointer"></i>
+        </div>
         <div className="create-content overflow-hidden w-full justify-center items-center flex flex-col bg-gray-300 h-[90%]">
 
           <div className="main flex flex-grow justify-center items-center overflow-hidden">
@@ -506,8 +519,9 @@ const CreterHome = () => {
 
                   </div>
 
-                  <div className="buttons w-full">
-                    <Button content="Create" type="submit" className="bg-black text-white w-full py-2" disabled={isSubmitting} loader={isSubmitting} />
+                  <div className="buttons w-full flex gap-3">
+                    <Button content="Cancel" type="button" className="bg-gray-600 px-7 py-2  text-white font-semibold"/>
+                    <Button content="Create" type="submit" className="bg-black text-white  flex-grow py-2" disabled={isSubmitting} loader={isSubmitting} />
                   </div>
                   {loader && <div className='absolute h-full w-full bg-gray-50 opacity-50'>
                     <Loader className="bg-[#0e172b] z-40 " />

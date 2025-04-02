@@ -44,7 +44,7 @@ const ContentCard = ({ card ,deleteFunc,editFunc}) => {
 
       {/* Overlay */}
       <div
-    className="overLay rounded-lg h-full w-full opacity-30 absolute bg-gray-100 top-0 hover:opacity-65 transition-all duration-150 ease-in-out">
+    className="overLay  h-full w-full opacity-30 absolute bg-gray-100 top-0 hover:opacity-65 transition-all duration-150 ease-in-out">
 
       </div>
 
@@ -57,7 +57,7 @@ const ContentCard = ({ card ,deleteFunc,editFunc}) => {
           className="text-sm cursor-pointer"
           onClick={() => setShowComments(!showComments)}
         >
-          <i className="fa-solid fa-comment mr-1 text-white text-sm"></i>{card?.comment?.length}
+          <i className="fa-solid fa-comment mr-1 text-white text-sm"></i>{card?.comment?.length || 0}
         </p>
       </div>
 

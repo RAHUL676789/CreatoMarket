@@ -9,15 +9,18 @@ const uploadFile=async(file)=>{
 
     const formData = new FormData();
     formData.append('file',file);
-    formData.append('upload_preset','chat-app-file');
+    formData.append('upload_preset','creatoMarket');
     const response = await fetch(url,{
         method:"post",
         body:formData
     })
-
-    const rdata = await response.json();
   
-   return rdata.url;
+    const rdata = await response.json();
+   console.log(rdata);
+   return {
+    url:rdata.url,
+    pId:rdata
+   };
 }
 
 export default uploadFile;

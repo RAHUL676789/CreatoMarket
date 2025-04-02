@@ -4,6 +4,10 @@ import SkeletonCard from "../components/SkeletonCard";
 import Button from "../components/Button";
 import { useLocation } from "react-router-dom";
 import { debounceFunc } from "../helper/debounce";
+import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux"
+import { updateContent } from "../features/user/userSlice";
+import NotFound from "../components/NotFound";
 const Contents = () => {
   const [loading, setLoading] = useState(true);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -13,15 +17,20 @@ const Contents = () => {
   const [deleteFoun, setdeleteFoun] = useState(false)
   const location = useLocation();
   const [isEditModalOpen, setisEditModalOpen] = useState(false)
+  const [isEdit, setisEdit] = useState(false);
+  const user = useSelector((state) => state.user);
+  const [card, setcard] = useState(user?.contents?.filter(item => item?.type == location?.state));
+  const URL = import.meta.env.VITE_API_URL;
+  const dispatch = useDispatch();
 
   const [editFormData, seteditFormData] = useState({
     title: "",
-    price: 0,
+    price: currentCard?.price || 0,
     description: "",
     url: ""
   })
 
-  // console.log(location);
+  console.log(location);
 
   const wait = () => {
     return new Promise((res, rej) => {
@@ -44,8 +53,8 @@ const Contents = () => {
 
   const checkTitleAvailableOrNot = () => {
     console.log(deleteTitle)
-    let result = location?.state?.some((item, i) => item.title == deleteTitle);
-   
+    let result = user?.contents?.some((item, i) => item.title == deleteTitle);
+
     if (result) {
       setdeleteFoun(true);
       setdeleteBtn(false);
@@ -67,23 +76,95 @@ const Contents = () => {
   }
 
 
-  const handleEditFunc = (item)=>{
-           setcurrentCard(item);
-           setisEditModalOpen(true);
-           seteditFormData((prev)=>{
-            return {
-              ...prev,
-              title:item?.title,
-              price:item?.price,
-              description:item?.description,
-              url:item?.url
-            }
-           })
+  const handleEditFunc = (item) => {
+    setcurrentCard(item);
+    setisEditModalOpen(true);
+    seteditFormData((prev) => {
+      return {
+        ...prev,
+        title: item?.title,
+        price: item?.price,
+        description: item?.description,
+        url: item?.url
+      }
+    })
   }
 
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (currentCard?.title == editFormData?.title && currentCard?.price == editFormData?.price && currentCard?.description == editFormData?.description && currentCard?.url == editFormData?.url) {
+      toast.error("No changes made to the content");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${URL}/content/update`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...editFormData,
+          id: currentCard?._id
+        }),
+      });
+
+      const result = await response.json();
+      console.log(result);
+      if (result?.success === true) {
+        toast.success("Content updated successfully")
+        setisEditModalOpen(false);
+        setisEdit(false);
+        seteditFormData({
+          title: "",
+          price: 0,
+          description: "",
+          url: ""
+        })
+        dispatch(updateContent(result.data))
+
+      } else {
+        toast.error("Error updating content")
+      }
+    } catch (error) {
+      console.log(error);
+
+    }
+
+  }
+
+
+  const handleEditFormInput = (e) => {
+    seteditFormData((prev) => {
+      return {
+        ...prev,
+        [e.target.name]: e.target.value
+      }
+    })
+  }
+
+  const handleDeleteContent = async(e)=>{
+    try {
+      const response = await fetch(`${URL}/content/delete`, {
+        method:"delete",
+        credentials:"include",
+        headers:{
+          "content-type":"application/json"
+        },
+        body:JSON.stringify({id:currentCard?._id})
+      });
+      const result = await response.json();
+      console.log(result);
+    } catch (error) {
+      console.log(error);
+
+    }
+  }
   return (
     <div className="px-2 py-3 relative overflow-scroll scrollbar-hidden justify-start items-start w-full h-screen flex flex-wrap gap-2 bg-gray-100">
-      <div>
+      <div className="w-full">
         {loading ? (
           <div className="w-full h-full flex flex-wrap gap-2 justify-center items-center">
             {[...Array(8)].map((_, i) => (
@@ -91,14 +172,19 @@ const Contents = () => {
             ))}
           </div>
         ) : (
-          <div className="flex h-full flex-wrap justify-center items-center gap-2">
-            {location?.state?.map((item, i) => (
-              <ContentCard key={i}
-                card={item}
-                deleteFunc={() => handleDeleteFunc(item)}
-                editFunc = {()=>handleEditFunc(item)}
-              />
-            ))}
+          <div className="flex w-[100%] h-full  flex-wrap justify-start items-center gap-2">
+            {
+                card?.length > 0 ?  user?.contents?.map((item,i)=>(
+                    
+                  item?.type == location?.state && <ContentCard key={i} card={item} deleteFunc={() => handleDeleteFunc(item)} editFunc={() => handleEditFunc(item)} />
+             
+         
+
+               ))
+           : <div className="w-[100%] ">
+             <NotFound errMsg="content not found "/>
+              </div>
+            }
           </div>
         )}
       </div>
@@ -130,7 +216,7 @@ const Contents = () => {
                 content="Delete"
                 className="bg-red-600  disabled:cursor-not-allowed disabled:bg-gray-400  text-white px-7  py-2 rounded-2xl"
                 disabled={deleteBtn}
-                func={() => console.log("deleted")}
+                func={handleDeleteContent}
               />
             </div>
           </div>
@@ -143,10 +229,10 @@ const Contents = () => {
           <div className="editContent h-full overflow-y-scroll  scrollbar-hidden  bg-white w-[60%] px-5 flex flex-col gap-3">
             <div className="header h-54">
               <h1 className="text-xl text-[#0e172b] text-center mb-2 font-semibold">Edit this content</h1>
-              <div className="h-full">
+              <div className="h-full ">
                 <img src={editFormData?.url}
                   alt="content-image"
-                  className="h-full w-full bg-repeat"
+                  className="h-full w-full bg-repeat "
                 />
               </div>
             </div>
@@ -154,33 +240,39 @@ const Contents = () => {
             <div className="form mt-4 flex-grow py-4 font-semibold  ">
 
 
-              <form className="w-full  h-full flex flex-col justify-start items-center">
+              <form onSubmit={handleEditSubmit} className="w-full  h-full flex flex-col justify-start items-center">
                 <div className="title w-full  justify-center items-start  flex flex-col gap-1 px-4">
                   <label htmlFor="">
                     title
                   </label>
                   <input type="text"
-                  value={editFormData?.title}
-                    className="bg-gray-200 w-[100%] py-2 rounded-xs border outline-none px-2" />
+                    value={editFormData?.title}
+                    className="bg-gray-200 w-[100%] py-2 rounded-xs border outline-none px-2"
+                    name="title"
+                    onChange={handleEditFormInput} />
                 </div>
                 <div className="title w-full  justify-center items-start  flex flex-col gap-1 px-4">
                   <label htmlFor="">price</label>
-                  <input 
-                  value={editFormData?.price}
-                  type="text " className="bg-gray-200 w-[100%] py-2 px-2 border outline-none" />
+                  <input
+                    value={editFormData?.price}
+                    name="price"
+                    onChange={handleEditFormInput}
+                    type="number" className="bg-gray-200 w-[100%] py-2 px-2 border outline-none" />
                 </div>
                 <div className="title w-full  justify-center items-start  flex flex-col gap-1 px-4">
                   <label htmlFor="">description</label>
                   <input
-                  value={editFormData?.description} type="text" className="bg-gray-200 w-[100%] py-2 px-2 border outline-none" />
+                    name="description"
+                    onChange={handleEditFormInput}
+                    value={editFormData?.description} type="text" className="bg-gray-200 w-[100%] py-2 px-2 border outline-none" />
                 </div>
 
 
 
 
                 <div className="buttons  w-full justify-center gap-3 flex mt-4 py-2">
-                    <Button content="Delete" className="px-7 py-2 bg-[#ee223d] text-white font-bold "/>
-                    <Button content="Cancel" className="px-7 py-2 bg-[#0e172b] text-white font-bold "/>
+                  <Button type="submit" content="Update" className="px-7 py-2 bg-[#ee223d] text-white font-bold " />
+                  <Button func={() => setisEditModalOpen(false)} type="button" content="Cancel" className="px-7 py-2 bg-[#0e172b] text-white font-bold " />
                 </div>
               </form>
             </div>
@@ -194,7 +286,10 @@ const Contents = () => {
       {!loading && <Button
         content="Open Delete Modal"
         className="fixed bottom-5 right-5 bg-red-500 text-white px-4 py-2 rounded-lg"
-        func={() => setIsDeleteModalOpen(true)}
+        func={() =>
+           { setcurrentCard(null)
+           setIsDeleteModalOpen(true)}
+        }
       />}
     </div>
   );

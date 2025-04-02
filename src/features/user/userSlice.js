@@ -32,8 +32,13 @@ const userSlice = createSlice({
             state.wallet = action.payload.wallet;
         },
         updateContent: (state, action) => {
-            state.contents.push(action.payload);
+            console.log("action.payload", action.payload);
+            const index = state.contents.findIndex(item => item._id === action.payload._id);
+            if (index !== -1) {
+                state.contents[index] = action.payload; // ✅ Redux Toolkit me ye allowed hai
+            }
         }
+        
     }
 });
 
