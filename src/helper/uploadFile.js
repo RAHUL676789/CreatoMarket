@@ -19,7 +19,7 @@ const uploadFile=async(file)=>{
    console.log(rdata);
    return {
     url:rdata.url,
-    pId:rdata
+    pId:rdata.public_id
    };
 }
 

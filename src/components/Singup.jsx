@@ -212,41 +212,8 @@ try {
                         {errors.password && <p className='relative w-full  max-w-sm  px-2 text-red-700'>{errors.password.message}</p>}
 
                          
-                         <div className='relative w-full  max-w-sm font-bold px-2'>
-                            <h1>select user type?</h1>
-
-                         </div>
-                        <div className="relative w-full max-w-sm flex justify-between ">
-                           
-                            <label htmlFor="buyer" className='font-bold ml-3'>Buyer?</label>
-                            <input
-                                type="radio"
-                                id="buyer"
-                                name='userRole'
-                                value="buyer"
-                                placeholder="Enten full name"
-                                className="w-full accent-[#0e172b]  pr-4 py-2 outline-0 bg-gray-100 font-bold "
-                                {...register("userRole",{
-                                    required:{value:true,message:"select a user type"}
-
-                                })}
-                            />
-                            <label htmlFor="creater" className='font-bold ml-3'>Creater?</label>
-                            <input type="radio" id="creater" 
-                            value="creater"
-                            name='userRole'
-                              className=" w-full pr-4 accent-[#0e172b] py-4 outline-0 bg-gray-100 font-bold "   {...register("userRole",{
-                                required:{value:true,message:"select a user type"}
-
-                            })}/>
-                            
-                        </div>
-                        <div className='relative w-full  max-w-sm  px-2 text-red-700'>
-                         
-
-                     
-                        {errors.userRole && <p >{errors.userRole.message}</p>}
-                        </div>
+                      
+                       
 
                        { otp && <div className="relative w-full max-w-sm">
                             <input

@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux"
 import toast from "react-hot-toast"
 import { useNavigate } from "react-router-dom"
 import { getUserDetail } from '../helper/getUserDetail';
-import { initUser, updateContent } from "../features/user/userSlice"
+import { initUser, newContent, updateContent } from "../features/user/userSlice"
 import Avatar from '../components/Avatar';
 import uploadFile from '../helper/uploadFile';
 import { useForm } from "react-hook-form"
@@ -23,6 +23,7 @@ const CreterHome = () => {
   const [content, setContent] = useState(false);
   const [nav, setnav] = useState(false)
   const user = useSelector((state) => state.user)
+  const [totalLikes, settotalLikes] = useState(user?.contents?.reduce((acc,curr)=>acc=curr.likes,0));
   console.log(user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -33,7 +34,8 @@ const CreterHome = () => {
   const [imageContent, setimageContent] = useState([]);
   const [videoContent, setvideoContent] = useState([]);
   const [rawContent, setrawContent] = useState([]);
-  const [create,setCreate] = useState(false);
+  const [create, setCreate] = useState(false);
+  const [pId, setpId] = useState("");
 
   const [contentUrl, setContentUrl] = useState(null);
 
@@ -49,8 +51,10 @@ const CreterHome = () => {
     setLoader(true);
     try {
       const contentUrl = await uploadFile(e.target.files[0]);
+      console.log(contentUrl);
       if (contentUrl) {
         setContentUrl(contentUrl);
+        setpId(contentUrl.pId);
         setLoader(false);
       }
     } catch (error) {
@@ -79,13 +83,15 @@ const CreterHome = () => {
         headers: {
           "content-type": "application/json"
         },
-        body: JSON.stringify({ ...data, url: contentUrl?.url,publicId:contentUrl?.pId })
+        body: JSON.stringify({ ...data, url: contentUrl?.url, publicId: contentUrl?.pId })
       })
 
       const result = await response.json();
       if (result.success) {
         toast.success(result.message);
-        dispatch(updateContent(result.data));
+        dispatch(newContent(result.data));
+        setCreate(false);
+        setContentUrl(null);
       } else {
         toast.error(result.message);
       }
@@ -109,51 +115,50 @@ const CreterHome = () => {
       console.log(userdata)
       if (userdata) {
         dispatch(initUser(userdata))
-        setimageContent((prev)=>{
-          return userdata?.contents?.filter((item)=>item.type == "image")
+        setimageContent((prev) => {
+          return userdata?.contents?.filter((item) => item.type == "image")
         });
-        setvideoContent((prev)=>{
-          return userdata?.contents?.filter((item)=>item.type == "video")
+        setvideoContent((prev) => {
+          return userdata?.contents?.filter((item) => item.type == "video")
         });
-        setrawContent((prev)=>{
-          return userdata?.contetns?.filter((item)=>item.type == "raw-content")
+        setrawContent((prev) => {
+          return userdata?.contetns?.filter((item) => item.type == "raw-content")
         });
       } else {
-        // navigate("/login")
+        navigate("/login")
       }
 
 
     } catch (error) {
       console.log(error)
-      // navigate("/login")
+      navigate("/login")
     }
   }
 
 
-  console.log(imageContent)
-  console.log(videoContent)
-  console.log(rawContent)
+  // this is the useEffect that will run when the page is loaded and check if the user is logged in or not
 
   useEffect(() => {
     if (token && user.id == "") {
 
       hello();
-    }else{
-      setimageContent((prev)=>{
-        return user?.contents?.filter((item)=>item.type == "image")
+    } else {
+      setimageContent((prev) => {
+        return user?.contents?.filter((item) => item.type == "image")
       });
-      setvideoContent((prev)=>{
-        return user?.contents?.filter((item)=>item.type == "video")
+      setvideoContent((prev) => {
+        return user?.contents?.filter((item) => item.type == "video")
       });
-      setrawContent((prev)=>{
-        return user?.contents?.filter((item)=>item.type == "raw-content");
-    })
+      setrawContent((prev) => {
+        return user?.contents?.filter((item) => item.type == "raw-content");
+      })
 
-    if (!token && user.id == "") {
-      toast.error("youre not login please login")
-      // navigate("/login")
+      if (!token && user.id == "") {
+        toast.error("youre not login please login")
+        navigate("/login")
+      }
     }
- } }, [user]);
+  }, [user]);
 
 
 
@@ -173,9 +178,9 @@ const CreterHome = () => {
           }
         })
         const upResult = await updateUser()
-        if(upResult.success){
+        if (upResult.success) {
           toast.success("profile picture updated")
-        }else{
+        } else {
           toast.error("unable to update profile please try again");
         }
       }
@@ -192,7 +197,7 @@ const CreterHome = () => {
 
   // function for user if update their others informations
   const updateUser = async (e) => {
- 
+
     if (Object.keys(upformData).length === 0) {
       alert("at least one filed is required");
       return;
@@ -244,6 +249,32 @@ const CreterHome = () => {
   }
 
 
+
+  const handleCancelContent = async()=>{
+    console.log(pId);
+    try {
+      const response = await fetch(`${URL}/content/Cancel`,{
+        method:"delete",
+        credentials:"include",
+        headers:{
+          "content-type":"application/json"
+        },
+        body:JSON.stringify({publicId:pId})
+      })
+
+      const result = await response.json();
+      if(result.success){
+        setCreate(false);
+      }else{
+        toast.error(result.message || "unable to cancel content please try again")
+      }
+    } catch (error) {
+      console.log(error)
+      toast.error(error.message || "someting went wrong")
+      
+    }
+  }
+
   // alll ui component
 
   return (
@@ -266,9 +297,9 @@ const CreterHome = () => {
                 onChange={handlUpdateProfileChange} />
               {/* {upPic == false ? <i class="fa-solid fa-pen-fancy cursor-pointer" title='edit'></i> : <Button func={updateUser} content="Updating" loader={upload} className="bg-[#0e172b]" />} */}
 
-              {upPic == true ? <Loader className="bg-[#0e172b]"/> : <div>
-                     <i className='fa-solid fa-pen-fancy '></i>
-                </div>}
+              {upPic == true ? <Loader className="bg-[#0e172b]" /> : <div>
+                <i className='fa-solid fa-pen-fancy '></i>
+              </div>}
             </label>
 
 
@@ -282,7 +313,7 @@ const CreterHome = () => {
 
           <div className=' cursor-pointer flex overflow-hidden bg-white w-full p-3 justify-start items-center  px-2 py-1 hover:bg-gray-100 transition-all duration-100'>
             <i className="fa-solid p-1 text-center h-8 w-8 fa-heart aspect-square rounded-full  justify-center items-center border !inline-flex"></i>
-            {isHovered && <span className="font-light ml-1 text-lg">989</span>}
+            {isHovered && <span className="font-light ml-1 text-lg">{totalLikes}</span>}
           </div>
           <div className='flex overflow-hidden bg-white w-full p-3 justify-start items-center  px-2 py-1  hover:bg-gray-100 transition-all duration-100 cursor-pointer'>
             <i className="fa-solid fa-wallet p-1 h-8 w-8 items-center justify-center  flex-col rounded-full aspect-square border !inline-flex"></i>
@@ -337,7 +368,7 @@ const CreterHome = () => {
 
           </div>
 
-          <div onClick={()=>setCreate(true)} className="new  border px-8 py-2 sm:flex justify-center items-center hover:bg-gray-200 cursor-pointer">
+          <div onClick={() => setCreate(true)} className="new  border px-8 py-2 sm:flex justify-center items-center hover:bg-gray-200 cursor-pointer">
             <span className='mr-2'>Create-new</span>
             <i className="fa-solid fa-plus"></i>
           </div>
@@ -357,7 +388,7 @@ const CreterHome = () => {
             <HoverCard type="video" video={true} cardData={videoContent} />
           </div>
           <div className="content">
-            <HoverCard type="rawContent" textContent={true}  cardData={rawContent}/>
+            <HoverCard type="rawContent" textContent={true} cardData={rawContent} />
           </div>
 
         </div>
@@ -369,7 +400,7 @@ const CreterHome = () => {
       {filter && <div className={`edit-modal 
       flex justify-center items-center
       
-      absolute h-full w-full bg-gray-400 z-40 opacity-100 `}>
+      absolute h-full w-full bg-gray-400 z-50 opacity-100 `}>
 
         <div className={`details flex  rounded-lg bg-slate-950 md:h-[80%] md:w-[80%]  w-full h-full !blur-0 mt-10   `}>
           <div className="left1 hidden   w-[40%] bg-slate-800 p-2 h-full sm:flex justify-center items-center flex-col gap-3 rounded-l-lg">
@@ -426,7 +457,7 @@ const CreterHome = () => {
 
       {/* here i am going to create a model where user can create new content that more infor */}
 
-      {create &&  <div className="create w-full h-full bg-gray-600 absolute flex justify-center z-50 items-center">
+      {create && <div className="create w-full h-full bg-gray-600 absolute flex justify-center z-50 items-center">
         <div className="cross">
           <i onClick={() => setCreate(false)} className="fa-solid fa-xmark hover:scale-150 text-red-800  absolute right-3 top-6 cursor-pointer"></i>
         </div>
@@ -438,7 +469,7 @@ const CreterHome = () => {
               <div className="header  h-12 flex justify-center items-center">
                 <h1 className='text-3xl mb-2 text-[30e172b] font-bold'>Create - Content</h1>
               </div>
-            <div className="details pl-4 ">
+              <div className="details pl-4 ">
                 <form onSubmit={handleSubmit(handleCreate)} className='flex flex-col   items-center justify-center gap-2 relative'>
                   <div className="field flex flex-col justify-center w-full md:w-[95%]  ">
 
@@ -512,15 +543,16 @@ const CreterHome = () => {
                   <div className=" relative w-[100%] md:w-[95%] flex items-center justify-center">
 
                     <textarea type="text"
-
-                      name='text'
+                      
+                      {...register("description")}
+                      name='description'
                       placeholder='Write short description for content '
                       className='outline-none flex-grow border    px-16 py-2 bg-gray-100  ' />
 
                   </div>
 
                   <div className="buttons w-full flex gap-3">
-                    <Button content="Cancel" type="button" className="bg-gray-600 px-7 py-2  text-white font-semibold"/>
+                    <Button func={handleCancelContent} content="Cancel" type="button" className="bg-gray-600 px-7 py-2  text-white font-semibold" />
                     <Button content="Create" type="submit" className="bg-black text-white  flex-grow py-2" disabled={isSubmitting} loader={isSubmitting} />
                   </div>
                   {loader && <div className='absolute h-full w-full bg-gray-50 opacity-50'>

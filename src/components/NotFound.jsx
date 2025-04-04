@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const NotFound = ({errMsg}) => {
 return (
@@ -8,12 +9,12 @@ return (
         <p className="text-lg mb-6 text-center">
             Sorry, the page you are looking for does not exist.
         </p>
-        <a
-            href="/"
+        <Link to={"/"}
+          
             className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
         >
             Go Back Home
-        </a>
+        </Link>
     </div>
 )
 }

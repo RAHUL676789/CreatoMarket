@@ -1,8 +1,6 @@
-import React from "react";
-
 const SkeletonCard = () => {
   return (
-    <div className="relative  group h-60 w-60  overflow-hidden bg-gray-200 shadow-lg animate-pulse">
+    <div className=" relative group overflow-hidden bg-gray-200 shadow-lg animate-pulse w-[100%] md:w-[46%] min-h-[250px]  rounded-lg m-2">
       {/* Background Blur (Simulating Image Load) */}
       <div className="absolute inset-0 bg-gray-300"></div>
 
@@ -22,15 +20,11 @@ const SkeletonCard = () => {
         <div className="h-4 w-1/3 bg-gray-300 rounded"></div>
       </div>
 
-        {/* 🔥 Border Animation 🔥 */}
-        <div className="absolute inset-0 pointer-events-none  ">
-        {/* Top Border */}
+      {/* 🔥 Border Animation 🔥 */}
+      <div className="absolute inset-0 pointer-events-none">
         <span className="absolute top-0 left-0 w-0 h-[2px] bg-cyan-800 transition-all duration-200 group-hover:w-full"></span>
-        {/* Right Border */}
         <span className="absolute top-0 right-0 w-[2px] h-0 bg-cyan-800 transition-all duration-200 delay-200 group-hover:h-full"></span>
-        {/* Bottom Border */}
         <span className="absolute bottom-0 right-0 w-0 h-[2px] bg-cyan-800 transition-all duration-200 delay-400 group-hover:w-full"></span>
-        {/* Left Border */}
         <span className="absolute bottom-0 left-0 w-[2px] h-0 bg-cyan-800 transition-all duration-200 delay-600 group-hover:h-full"></span>
       </div>
 

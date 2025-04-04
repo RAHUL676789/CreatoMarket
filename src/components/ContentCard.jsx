@@ -28,16 +28,17 @@ const ContentCard = ({ card ,deleteFunc,editFunc}) => {
   ];
 
   return (
-<div>
+<div className="break-inside-avoid">
 
 
    
     <div
       onClick={()=>showComments && setShowComments(false)}
-      className=" h-60 w-60 relative group overflow-hidden bg-white shadow-lg">
+      className="relative group overflow-hidden bg-white shadow-lg
+      w-full">
       {/* Image */}
       <img
-        className="h-60 w-60 contain-content "
+        className="h-fit w-fit contain-content "
         src={card?.url}
         alt="Card Image"
       />

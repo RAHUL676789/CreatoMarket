@@ -6,7 +6,7 @@ import { useLocation } from "react-router-dom";
 import { debounceFunc } from "../helper/debounce";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux"
-import { updateContent } from "../features/user/userSlice";
+import { updateContent,removeContent } from "../features/user/userSlice";
 import NotFound from "../components/NotFound";
 const Contents = () => {
   const [loading, setLoading] = useState(true);
@@ -156,38 +156,57 @@ const Contents = () => {
         body:JSON.stringify({id:currentCard?._id})
       });
       const result = await response.json();
-      console.log(result);
+      if(result.success){
+        dispatch(removeContent(result.data));
+        setIsDeleteModalOpen(false);
+        setcard((prev) => {
+          return prev.filter(item => item._id != result?.data?._id)
+        })
+      }
     } catch (error) {
       console.log(error);
+      toast.error(error.message || "Error deleting content")
 
     }
   }
+
+  console.log("card",card)
   return (
     <div className="px-2 py-3 relative overflow-scroll scrollbar-hidden justify-start items-start w-full h-screen flex flex-wrap gap-2 bg-gray-100">
-      <div className="w-full">
-        {loading ? (
-          <div className="w-full h-full flex flex-wrap gap-2 justify-center items-center">
-            {[...Array(8)].map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex w-[100%] h-full  flex-wrap justify-start items-center gap-2">
-            {
-                card?.length > 0 ?  user?.contents?.map((item,i)=>(
-                    
-                  item?.type == location?.state && <ContentCard key={i} card={item} deleteFunc={() => handleDeleteFunc(item)} editFunc={() => handleEditFunc(item)} />
-             
-         
-
-               ))
-           : <div className="w-[100%] ">
-             <NotFound errMsg="content not found "/>
+    <div className="w-full">
+  {loading ? (
+    <div className="w-full p-2 flex flex-wrap justify-center items-center">
+      {[...Array(8)].map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </div>
+  ) : (
+    <>
+      {card?.length > 0 ? (
+        <div className="w-full px-4 mt-4 gap-4 columns-1 sm:columns-2 md:columns-2 xl:columns-4">
+          {user?.contents?.map((item, i) =>
+            item?.type == location?.state && (
+              <div key={i} className="break-inside-avoid mb-4">
+                <ContentCard 
+                  card={item} 
+                  deleteFunc={() => handleDeleteFunc(item)} 
+                  editFunc={() => handleEditFunc(item)} 
+                />
               </div>
-            }
-          </div>
-        )}
-      </div>
+            )
+          )}
+        </div>
+      ) : (
+        // 🚀 NotFound component ko columns ke bahar rakho
+        <div className="w-full flex justify-center items-center mt-10">
+          <NotFound errMsg="Content not found" />
+        </div>
+      )}
+    </>
+  )}
+</div>
+
+         
 
       {/* 🛑 Delete Modal 🛑 */}
       {isDeleteModalOpen && (
