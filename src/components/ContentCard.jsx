@@ -28,7 +28,7 @@ const ContentCard = ({ card ,deleteFunc,editFunc}) => {
   ];
 
   return (
-<div className="break-inside-avoid">
+<div onDoubleClic className="break-inside-avoid">
 
 
    
