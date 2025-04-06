@@ -47,7 +47,7 @@ const Login = () => {
                     toast.success(result.message)
                     dispatch(initUser(result.data));
                     setisLoading(false)
-                    navigate("/")
+                    navigate("/home")
                     
                    }else{
                     toast.error(result.message);

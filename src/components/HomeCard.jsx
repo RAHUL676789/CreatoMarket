@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 
 const HomeCard = ({ card ,func}) => {
+  const user = useSelector((state)=>state.user);
+ 
+
   return (
     <div onDoubleClick={()=>func(card)}  className="mb-4 break-inside-avoid cursor-pointer">
       <div className="relative group">

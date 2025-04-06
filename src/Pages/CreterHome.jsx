@@ -42,6 +42,7 @@ const CreterHome = () => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting }
   } = useForm();
 
@@ -52,10 +53,12 @@ const CreterHome = () => {
     try {
       const contentUrl = await uploadFile(e.target.files[0]);
       console.log(contentUrl);
-      if (contentUrl) {
+      if (contentUrl.success) {
         setContentUrl(contentUrl);
         setpId(contentUrl.pId);
         setLoader(false);
+      }else{
+        toast.error(contentUrl?.errorMsg)
       }
     } catch (error) {
       console.log(error)
@@ -91,9 +94,11 @@ const CreterHome = () => {
         toast.success(result.message);
         dispatch(newContent(result.data));
         setCreate(false);
+        reset();
         setContentUrl(null);
       } else {
         toast.error(result.message);
+        setCreate(false);
       }
 
     } catch (error) {

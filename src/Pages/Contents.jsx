@@ -15,6 +15,7 @@ const Contents = () => {
   const [deleteTitle, setdeleteTitle] = useState("");
   const [deleteBtn, setdeleteBtn] = useState(true);
   const [deleteFoun, setdeleteFoun] = useState(false)
+  const [btnLoader, setbtnLoader] = useState(false)
   const location = useLocation();
   const [isEditModalOpen, setisEditModalOpen] = useState(false)
   const [isEdit, setisEdit] = useState(false);
@@ -146,6 +147,7 @@ const Contents = () => {
   }
 
   const handleDeleteContent = async(e)=>{
+    setbtnLoader(true);
     try {
       const response = await fetch(`${URL}/content/delete`, {
         method:"delete",
@@ -159,13 +161,26 @@ const Contents = () => {
       if(result.success){
         dispatch(removeContent(result.data));
         setIsDeleteModalOpen(false);
+        setbtnLoader(false);
+        setdeleteFoun(false);
+        setdeleteTitle("");
         setcard((prev) => {
           return prev.filter(item => item._id != result?.data?._id)
         })
+      }else{
+        toast.error(result.message);
+        setIsDeleteModalOpen(false);
+        setbtnLoader(false);
+        setcurrentCard(null);
+        setdeleteFoun(false);
+        setdeleteTitle("")
       }
     } catch (error) {
       console.log(error);
+      setbtnLoader(false);
       toast.error(error.message || "Error deleting content")
+      setdeleteTitle("");
+      setdeleteFoun(false);
 
     }
   }
@@ -186,7 +201,7 @@ const Contents = () => {
         <div className="w-full px-4 mt-4 gap-4 columns-1 sm:columns-2 md:columns-2 xl:columns-4">
           {user?.contents?.map((item, i) =>
             item?.type == location?.state && (
-              <div key={i} className="break-inside-avoid mb-4">
+              <div key={item?._id} className="break-inside-avoid mb-4">
                 <ContentCard 
                   card={item} 
                   deleteFunc={() => handleDeleteFunc(item)} 
@@ -229,12 +244,17 @@ const Contents = () => {
               <Button
                 content="Cancel"
                 className="bg-gray-500 text-white px-7 py-2 rounded-2xl"
-                func={() => setIsDeleteModalOpen(false)}
+                func={() =>{
+                  setIsDeleteModalOpen(false)
+                  setcurrentCard(null);
+                  setdeleteTitle("")
+                } }
               />
               <Button
                 content="Delete"
                 className="bg-red-600  disabled:cursor-not-allowed disabled:bg-gray-400  text-white px-7  py-2 rounded-2xl"
                 disabled={deleteBtn}
+                loader={btnLoader}
                 func={handleDeleteContent}
               />
             </div>

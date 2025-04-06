@@ -7,6 +7,7 @@ const url = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
 
 const uploadFile=async(file)=>{
 
+   try{
     const formData = new FormData();
     formData.append('file',file);
     formData.append('upload_preset','creatoMarket');
@@ -19,8 +20,13 @@ const uploadFile=async(file)=>{
    console.log(rdata);
    return {
     url:rdata.url,
-    pId:rdata.public_id
+    pId:rdata.public_id,
+    success:true
    };
+   }catch(e){
+   console.log(e);
+   return {errorMsg:"failed to upload please try agina",success:false};
+   }
 }
 
 export default uploadFile;

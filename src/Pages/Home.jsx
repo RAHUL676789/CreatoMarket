@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import HomeCard from "../components/HomeCard.jsx";
 import { useDispatch, useSelector } from "react-redux";
-import { initContent } from "../features/content/contentSlice.js";
+import { initContent, upLikeCount } from "../features/content/contentSlice.js";
+import toast from "react-hot-toast"
+import {useNavigate} from "react-router-dom"
+import { getToken } from "../helper/getToken.js";
+import { getUserDetail } from "../helper/getUserDetail.js";
+import { initUser } from "../features/user/userSlice.js";
 
 const Home = () => {
   const URL = import.meta.env.VITE_API_URL;
@@ -9,6 +14,32 @@ const Home = () => {
   const contents = useSelector((state) => state.content);
   const [content, setContent] = useState([]);
   const [currentItem, setCurrentItem] = useState(null);
+ const [likeStatus, setlikeStatus] = useState(null);
+  const user = useSelector((state)=>state.user);
+
+  const token = getToken();
+  const dispath = useDispatch();
+  const navigate = useNavigate();
+
+
+
+  const userDetail = async()=>{
+       try {
+         let result = await getUserDetail(token);
+         console.log(result);
+         dispatch(initUser(result));
+         
+       } catch (error) {
+         console.log(error);
+       }
+  }
+
+  useEffect(()=>{
+       if(token && !(user.id)){
+        userDetail();
+       }
+     
+  },[])
 
   const getAll = async () => {
     try {
@@ -40,12 +71,97 @@ const Home = () => {
     setCurrentItem(item);
   };
 
+  const handleDownload = () => {
+   try{
+    if (currentItem?.url) {
+      // ✅ Step 1: Modify Cloudinary URL to force download
+      const originalUrl = currentItem.url;
+      const downloadUrl = originalUrl.includes("/upload/")
+        ? originalUrl.replace("/upload/", "/upload/fl_attachment/")
+        : originalUrl;
+  
+      // ✅ Step 2: Create a temporary link & trigger download
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = currentItem.title || "download";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      console.log("No URL available for download.");
+    }
+   }catch(e){
+    console.log(e);
+   }
+  };
+
+
+  const handleShare =  () => {
+  try{
+    if (navigator.share) {
+      navigator
+        .share({
+          title: currentItem?.title,
+          text: currentItem?.description,
+          url: currentItem?.url,
+        })
+        .then(() => console.log("Content shared successfully"))
+        .catch((error) => console.log("Error sharing content:", error));
+    } else {
+      console.log("Web Share API is not supported in this browser.");
+    }
+  }catch(e){
+    console.log(e);
+  }
+  }
+
+
+
+  useEffect(()=>{
+        setlikeStatus((currentItem?.likes?.some((item,i)=>item.userId == user.id)));
+  },[currentItem])
+
+  const handleLike = async(postId)=>{
+     
+  
+     if(likeStatus){
+      dispatch(upLikeCount(1))
+     }else{
+      dispatch(upLikeCount(-1));
+     }
+    
+    if(!user.id){
+      toast.error("ur not login")
+      navigate("/login");
+      return;
+    }
+    // setlikeStatus(!likeStatus);
+    
+    try {
+      const response = await fetch(`${URL}/content/likes`,
+        {
+          method:"post",
+          credentials:"include",
+          headers:{
+            "content-type":"application/json"
+          },
+          body:JSON.stringify({content:postId,likeStatus:likeStatus,userId:user?.id })
+        }
+      )
+
+      const result = await response.json();
+      console.log(result);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  
   return (
     <div className="h-screen w-full relative">
       {/* 🏞️ Grid Layout */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-2 gap-4 p-4">
         {content?.map((item, i) => (
-          <HomeCard key={i} card={item} func={handleCurrentItemm} />
+          <HomeCard key={item?._id} card={item} func={handleCurrentItemm} />
         ))}
       </div>
 
@@ -69,14 +185,14 @@ const Home = () => {
                 </div>
               </div>
               <div className="btns h-12 p-2 text-black gap-2 flex ">
-                    <i className="fa-solid fa-heart !inline-flex justify-center items-center px-2  opacity-65 hover:opacity-100 bg-gray-100 border rounded-xs cursor-pointer">
+                    <i onClick={()=>handleLike(currentItem?._id)} className="fa-solid fa-heart !inline-flex justify-center items-center px-2  opacity-65 hover:opacity-100 bg-gray-100 border rounded-xs cursor-pointer">
 
                     </i>
                     <i className="fa-solid fa-add  !inline-flex justify-center items-center px-2  border rounded-xs bg-gray-100 opacity-65 hover:opacity-100 cursor-pointer">
 
                     </i>
 
-                    <button className=" text-white font-light text-xs px-4 rounded-xs bg-green-700 hover:font-semibold  cursor-pointer">Download</button>
+                    <button onClick={handleDownload} className=" text-white font-light text-xs px-4 rounded-xs bg-green-700 hover:font-semibold  cursor-pointer">Download</button>
               </div>
             </div>
 
@@ -101,19 +217,33 @@ const Home = () => {
             {/* 🔽 Footer */}
             <div className=" py-4 px-6 text-center text-sm sticky bottom-0 left-0 w-full z-50 flex justify-around">
              
-              <div className="likes">
+              <div className="likes cursor-pointer">
                   <p className="text-gray-500">Likes</p>
-                  <span className="text-gray-800 font-semibold"> {currentItem?.likes}</span>
+                  <span className="text-gray-800 font-semibold"> {currentItem?.likeCount}</span>
               </div>
 
-              <div className="downloads">
-                <p className="text-gray-500">Downloads</p>
-               <span className="text-gray-800 font-semibold"> {currentItem?.downLoads}</span>
+              <div className="downloads cursor-pointer">
+                <p
+                  className="text-gray-500 cursor-pointer"
+                
+                >
+                  Downloads
+
+             
+                </p>
+                <span>    {currentItem?.downLoads}</span>
+              
           
-
+  
               </div>
-              <div className="share">
-                    <p className="text-gray-500"><i className=" text-black fa-solid fa-share mr-1"></i>Share</p>
+              <div className="share cursor-pointer">
+                <p
+                  className="text-gray-500 cursor-pointer"
+                  onClick={handleShare}
+                >
+                  <i className="text-black fa-solid fa-share mr-1"></i>Share
+                </p>
+                  
 
               </div>
             </div>
@@ -121,11 +251,13 @@ const Home = () => {
             {/* ❌ Close Button */}
             <div className="text-center my-4  max-h-40 overflow-scroll scrollbar-hidden ">
              <div className="comments flex flex-wrap">
-                   {
-                    [...Array(8)].map((ite)=>(<div className="w-[100%] border flex justify-start p-4 ">
+                   { currentItem?.comments?.length > 0 ?
+                    currentItem?.comments?.map((ite)=>(<div className="w-[100%] border flex justify-start p-4 ">
                       jais hree rma
                       </div>))
-                   }
+                   :<div>
+                    no comment yet
+                     </div>}
              </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 
 
 import { createSlice } from "@reduxjs/toolkit";
+import { act } from "react";
 
 const initialState = {
     id:"",
@@ -14,7 +15,8 @@ const initialState = {
     comments:[],
     reviews:[],
     downLoads:0,
-    publicId:""
+    publicId:"",
+    likeCount : 0
 
 }
 
@@ -36,6 +38,11 @@ const contentSlice = createSlice({
                 state.downloads = action.payload.downloads,
                 state.publicId =action.payload.publicId
                 state.id = action.payload._id
+                state.likeCount = action.payload.likeCount
+            },
+            upLikeCount : (state,action)=>{
+                console.log(action.payload);
+                 state.likeCount += action.payload;
             }
     }
 })
@@ -43,5 +50,5 @@ const contentSlice = createSlice({
 
 
 
-export const {initContent} = contentSlice.actions;
+export const {initContent,upLikeCount} = contentSlice.actions;
 export default contentSlice.reducer;
