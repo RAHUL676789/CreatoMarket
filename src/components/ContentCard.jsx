@@ -52,7 +52,7 @@ const ContentCard = ({ card ,deleteFunc,editFunc}) => {
       {/* Header */}
       <div className="header flex justify-between absolute px-5 w-full py-2 top-0">
         <p className="text-sm">
-          <i className="fa-solid fa-heart mr-1 text-sm text-red-700"></i>{card?.likes}
+          <i className="fa-solid fa-heart mr-1 text-sm text-red-700"></i>0
         </p>
         <p
           className="text-sm cursor-pointer"
